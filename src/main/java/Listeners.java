@@ -1,4 +1,19 @@
 
+import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
+import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.client.util.DateTime;
+import com.google.api.client.util.store.FileDataStoreFactory;
+import com.google.api.services.calendar.Calendar;
+import com.google.api.services.calendar.CalendarScopes;
+import com.google.api.services.calendar.model.Event;
+import com.google.api.services.calendar.model.EventDateTime;
+import com.google.api.services.calendar.model.Events;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Guild;
@@ -20,8 +35,13 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.GeneralSecurityException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Queue;
 
 public class Listeners extends ListenerAdapter {
 
@@ -136,10 +156,79 @@ public class Listeners extends ListenerAdapter {
                 }
             }
         }
+        if (commands[0].equalsIgnoreCase("calendar")){
+            if (commands.length >= 5){
+                commands[3] = commands[3].toUpperCase();
+                commands[4] = commands[4].toUpperCase();
+                if (commands[1].equals("date")){
+                    try {
+                        GoogleCalendarHelper helper = new GoogleCalendarHelper();
+                        Calendar service = helper.getService();
+                        String eventName = commands[2];
+                        LocalDate endDateExclusive = LocalDate.parse(commands[4]).plusDays(1);
 
-        
+                        DateTime startDate = new DateTime(commands[3]);
+                        DateTime endDate = new DateTime(endDateExclusive.toString());
+                        String[] startDateString = commands[3].split("-");
+                        String[] endDateString = commands[4].split("-");
 
-    }
+                        helper.addEventDate(service, eventName, startDate, endDate);
+                        event.getChannel().sendMessage("Successfully set 📅" + startDateString[1] + "/" + startDateString[2] + "~" + endDateString[1] + "/" + endDateString[2] + " | added : " + eventName).queue();
+                    } catch (IOException | GeneralSecurityException e) {
+                        e.printStackTrace();
+                        event.getChannel().sendMessage("❌ Failed to add calendar event: " + e.getMessage()).queue();
+                    }
+                }
+                else if (commands[1].equals("time")){
+                    commands[3] += ":00";
+                    commands[4] += ":00";
+                    try {
+                        GoogleCalendarHelper helper = new GoogleCalendarHelper();
+                        Calendar service = helper.getService();
+                        String eventName = commands[2];
+                        
+
+                        String startDateInput[] = commands[3].split("T");
+                        String endDateInput[] = commands[4].toString().split("T");
+
+                        LocalDateTime startDateTime = LocalDateTime.parse(commands[3]);
+                        LocalDateTime endDateTime = LocalDateTime.parse(commands[4].toString());
+
+
+                        String[] startDateString = startDateInput[0].split("-");
+                        String[] endDateString = endDateInput[0].split("-");
+
+
+                        ZoneId zoneId = ZoneId.of("Asia/Taipei");
+                        ZonedDateTime zonedStart = startDateTime.atZone(zoneId);
+                        ZonedDateTime zonedEnd = endDateTime.atZone(zoneId);
+
+                        DateTime startDateTimeGoogle = new DateTime(zonedStart.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+                        DateTime endDateTimeGoogle = new DateTime(zonedEnd.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+
+                        helper.addEventTime(service, eventName, startDateTimeGoogle, endDateTimeGoogle);
+                        event.getChannel().sendMessage("Successfully set 📅" + startDateInput[0] + " " + startDateInput[1] + " ~ " + endDateInput[0] + " " + endDateInput[1] + " | added : " + eventName).queue();
+                    } catch (IOException | GeneralSecurityException e) {
+                        e.printStackTrace();
+                        event.getChannel().sendMessage("❌ Failed to add calendar event: " + e.getMessage()).queue();
+                    }
+                }
+            }
+            else if (commands[1].equals("help")){
+                event.getChannel().sendMessage("formats:\n\"calendar  (date)  (title)  (yyyy/mm/dd)  (yyyy/mm/dd)\" \n" + 
+                                                        "\"calendar  (time)  (title)  (yyyy/mm/dd(Txx:xx))  (yyyy/mm/dd(Txx:xx))\"\n" +
+                                                        "example input :\ncalendar date test 2025-10-01 2025-10-02\n" +
+                                                        "calendar time test 2025-10-01T00:00 2025-10-02T12:00\n").queue();
+            }
+        }
+
+
+}
+
+
+
+
+    
     // get weather data
     public JSONObject getJSONData(String urlString) {
         try{
@@ -169,6 +258,12 @@ public class Listeners extends ListenerAdapter {
         return null;
     }
     
+
+    public void listUpcomingEvents(){
+
+    }
+
+
     // get current weather information including current temperature ,day temperature ,night temperature and weather condition
     public EmbedBuilder GetCurrentWeather(String city){
         city = city.replaceAll(" ", "%20");
