@@ -67,6 +67,11 @@ public class Listeners extends ListenerAdapter {
     @Override
     public void onReady(@NotNull ReadyEvent event) {
         for (Guild guild : event.getJDA().getGuilds()) {
+
+            /*
+             * 在伺服器註冊指令
+             */
+            
             guild.upsertCommand("units", "Unit, Metric is Celsius/KPH and Imperial is Fahrenheit/MPH.")
                 .addOptions(new OptionData(OptionType.STRING, "unit", "Unit, Metric is Celsius/KPH and Imperial is Fahrenheit/MPH.", true)
                     .addChoice("Metric", "metric")
