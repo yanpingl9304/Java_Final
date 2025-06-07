@@ -41,6 +41,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Queue;
 
 public class Listeners extends ListenerAdapter {
@@ -157,68 +158,168 @@ public class Listeners extends ListenerAdapter {
             }
         }
         if (commands[0].equalsIgnoreCase("calendar")){
-            if (commands.length >= 5){
-                commands[3] = commands[3].toUpperCase();
-                commands[4] = commands[4].toUpperCase();
-                if (commands[1].equals("date")){
-                    try {
-                        GoogleCalendarHelper helper = new GoogleCalendarHelper();
-                        Calendar service = helper.getService();
-                        String eventName = commands[2];
-                        LocalDate endDateExclusive = LocalDate.parse(commands[4]).plusDays(1);
+            if (commands.length >= 3){
 
-                        DateTime startDate = new DateTime(commands[3]);
-                        DateTime endDate = new DateTime(endDateExclusive.toString());
-                        String[] startDateString = commands[3].split("-");
-                        String[] endDateString = commands[4].split("-");
+                String options = commands[1];
+                switch (options){
 
-                        helper.addEventDate(service, eventName, startDate, endDate);
-                        event.getChannel().sendMessage("Successfully set 📅" + startDateString[1] + "/" + startDateString[2] + "~" + endDateString[1] + "/" + endDateString[2] + " | added : " + eventName).queue();
-                    } catch (IOException | GeneralSecurityException e) {
-                        e.printStackTrace();
-                        event.getChannel().sendMessage("❌ Failed to add calendar event: " + e.getMessage()).queue();
+                    case "adddate":
+                        if (commands.length >= 5){
+                            commands[3] = commands[3].toUpperCase();
+                            commands[4] = commands[4].toUpperCase();
+                            try {
+                                GoogleCalendarHelper helper = new GoogleCalendarHelper();
+                                Calendar service = helper.getService();
+                                String eventName = commands[2];
+                                LocalDate endDateExclusive = LocalDate.parse(commands[4]).plusDays(1);
+                                if (!commands[3].matches("\\d{4}-\\d{2}-\\d{2}") || !commands[4].matches("\\d{4}-\\d{2}-\\d{2}")) {
+                                    event.getChannel().sendMessage("❌ Invalid date format. Please use YYYY-MM-DD.").queue();
+                                    return;
+                                }
+                                DateTime startDate = new DateTime(commands[3]);
+                                DateTime endDate = new DateTime(endDateExclusive.toString());
+                                String[] startDateString = commands[3].split("-");
+                                String[] endDateString = commands[4].split("-");
+
+                                helper.addEventDate(service, eventName, startDate, endDate);
+                                event.getChannel().sendMessage("Successfully set 📅" + startDateString[1] + "/" + startDateString[2] + "~" + endDateString[1] + "/" + endDateString[2] + " | added : \"" + eventName + "\"").queue();
+                            } catch (IOException | GeneralSecurityException e) {
+                                    e.printStackTrace();
+                                    event.getChannel().sendMessage("❌ Failed to list calendar event.").queue();
+                            } catch (DateTimeParseException e) {
+                                e.printStackTrace();
+                                event.getChannel().sendMessage("❌ Invalid date/time format in calendar event.").queue();
+                            }
+                        }
+                        break;
+
+                    case "addtime":
+                        if (commands.length >= 5){
+                            commands[3] = commands[3].toUpperCase();
+                            commands[4] = commands[4].toUpperCase();
+                            commands[3] += ":00";
+                            commands[4] += ":00";
+                            try {
+                                GoogleCalendarHelper helper = new GoogleCalendarHelper();
+                                Calendar service = helper.getService();
+                                String eventName = commands[2];
+                                if (!commands[3].matches("\\d{4}-\\d{2}-\\d{2}") || !commands[4].matches("\\d{4}-\\d{2}-\\d{2}")) {
+                                    event.getChannel().sendMessage("❌ Invalid date format. Please use YYYY-MM-DD.").queue();
+                                    return;
+                                }
+
+                                String startDateInput[] = commands[3].split("T");
+                                String endDateInput[] = commands[4].toString().split("T");
+
+                                LocalDateTime startDateTime = LocalDateTime.parse(commands[3]);
+                                LocalDateTime endDateTime = LocalDateTime.parse(commands[4].toString());
+
+
+                                // String[] startDateString = startDateInput[0].split("-");
+                                // String[] endDateString = endDateInput[0].split("-");
+
+
+                                ZoneId zoneId = ZoneId.of("Asia/Taipei");
+                                ZonedDateTime zonedStart = startDateTime.atZone(zoneId);
+                                ZonedDateTime zonedEnd = endDateTime.atZone(zoneId);
+
+                                DateTime startDateTimeGoogle = new DateTime(zonedStart.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+                                DateTime endDateTimeGoogle = new DateTime(zonedEnd.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+
+                                helper.addEventTime(service, eventName, startDateTimeGoogle, endDateTimeGoogle);
+                                event.getChannel().sendMessage("Successfully set 📅" + startDateInput[0] + " " + startDateInput[1] + " ~ " + endDateInput[0] + " " + endDateInput[1] + " | added : \"" + eventName + "\"").queue();
+                            } catch (IOException | GeneralSecurityException e) {
+                                    e.printStackTrace();
+                                    event.getChannel().sendMessage("❌ Failed to list calendar event.").queue();
+                            } catch (DateTimeParseException e) {
+                                e.printStackTrace();
+                                event.getChannel().sendMessage("❌ Invalid date/time format in calendar event.").queue();
+                            }
+                        }
+                        break;
+                    
+                    case "delete":
+                        if (commands.length >= 4){
+                            try{
+                                GoogleCalendarHelper helper = new GoogleCalendarHelper();
+                                Calendar service = helper.getService();
+                                String title = commands[2];
+                                String dateString = commands[3];
+                                if (!dateString.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                                    event.getChannel().sendMessage("❌ Invalid date format. Please use YYYY-MM-DD.").queue();
+                                    return;
+                                }
+                                DateTime targetDate = new DateTime(dateString + "T00:00:00Z");
+                                if (helper.deleteEventByTitleAndDate(service, title, targetDate)) {
+                                    event.getChannel().sendMessage("Successfully deleted event \""+ title + "\" on " + dateString).queue();
+                                } else {
+                                    event.getChannel().sendMessage("No matching event \"" + title + "\" on " + dateString + " is found.").queue();
+                                }
+
+
+                            } catch (IOException | GeneralSecurityException e) {
+                                    e.printStackTrace();
+                                    event.getChannel().sendMessage("❌ Failed to list calendar event.").queue();
+                            } catch (DateTimeParseException e) {
+                                e.printStackTrace();
+                                event.getChannel().sendMessage("❌ Invalid date/time format in calendar event.").queue();
+                            }
+                        }
+                        break;
+                    case "listevent":
+                    if (commands.length == 3){
+                        try {
+                            GoogleCalendarHelper helper = new GoogleCalendarHelper();
+                            Calendar service = helper.getService();
+                            DateTime now = new DateTime(System.currentTimeMillis());
+
+                            event.getChannel().sendMessage(helper.listEvents(service, Integer.parseInt(commands[2]), now)).queue();
+                        } catch (IOException | GeneralSecurityException e) {
+                                    e.printStackTrace();
+                                    event.getChannel().sendMessage("❌ Failed to list calendar event.").queue();
+                        } catch (DateTimeParseException e) {
+                            e.printStackTrace();
+                            event.getChannel().sendMessage("❌ Invalid date/time format in calendar event.").queue();
+                        }
+                    } else if (commands.length == 4){
+                        try {
+                            GoogleCalendarHelper helper = new GoogleCalendarHelper();
+                            Calendar service = helper.getService();
+                            
+                            String dateString = commands[3];
+                            if (!dateString.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                                event.getChannel().sendMessage("❌ Invalid date format. Please use YYYY-MM-DD.").queue();
+                                return;
+                            }
+                            DateTime targetDate = new DateTime(dateString + "T00:00:00Z");
+                            event.getChannel().sendMessage(helper.listEvents(service, Integer.parseInt(commands[2]), targetDate)).queue();
+                        } catch (IOException | GeneralSecurityException e) {
+                                    e.printStackTrace();
+                                    event.getChannel().sendMessage("❌ Failed to list calendar event.").queue();
+                        }
                     }
-                }
-                else if (commands[1].equals("time")){
-                    commands[3] += ":00";
-                    commands[4] += ":00";
-                    try {
-                        GoogleCalendarHelper helper = new GoogleCalendarHelper();
-                        Calendar service = helper.getService();
-                        String eventName = commands[2];
-                        
+                    break;
+                    default:
+                    event.getChannel().sendMessage("formats:\n\n\"calendar  (adddate)  (title)  (yyyy/mm/dd)  (yyyy/mm/dd)\" \n" + 
+                                        "\"calendar  (addtime)  (title)  (yyyy/mm/dd(Txx:xx))  (yyyy/mm/dd(Txx:xx))\"\n" +
+                                        "\"calendar  (delete)  (title)  (yyyy/mm/dd)\"\n" + 
+                                        "\"calendar  listevent  (number)\"\n" +
+                                        "example input :\n\ncalendar date test 2025-10-01 2025-10-02\n" +
+                                        "calendar time test 2025-10-01T00:00 2025-10-02T12:00\n" + 
+                                        "calendar delete test 2025-10-01\n" +
+                                        "calendar listevent 5\n").queue();
+                    break;
 
-                        String startDateInput[] = commands[3].split("T");
-                        String endDateInput[] = commands[4].toString().split("T");
-
-                        LocalDateTime startDateTime = LocalDateTime.parse(commands[3]);
-                        LocalDateTime endDateTime = LocalDateTime.parse(commands[4].toString());
-
-
-                        String[] startDateString = startDateInput[0].split("-");
-                        String[] endDateString = endDateInput[0].split("-");
-
-
-                        ZoneId zoneId = ZoneId.of("Asia/Taipei");
-                        ZonedDateTime zonedStart = startDateTime.atZone(zoneId);
-                        ZonedDateTime zonedEnd = endDateTime.atZone(zoneId);
-
-                        DateTime startDateTimeGoogle = new DateTime(zonedStart.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-                        DateTime endDateTimeGoogle = new DateTime(zonedEnd.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
-
-                        helper.addEventTime(service, eventName, startDateTimeGoogle, endDateTimeGoogle);
-                        event.getChannel().sendMessage("Successfully set 📅" + startDateInput[0] + " " + startDateInput[1] + " ~ " + endDateInput[0] + " " + endDateInput[1] + " | added : " + eventName).queue();
-                    } catch (IOException | GeneralSecurityException e) {
-                        e.printStackTrace();
-                        event.getChannel().sendMessage("❌ Failed to add calendar event: " + e.getMessage()).queue();
-                    }
                 }
             }
-            else if (commands[1].equals("help")){
-                event.getChannel().sendMessage("formats:\n\"calendar  (date)  (title)  (yyyy/mm/dd)  (yyyy/mm/dd)\" \n" + 
-                                                        "\"calendar  (time)  (title)  (yyyy/mm/dd(Txx:xx))  (yyyy/mm/dd(Txx:xx))\"\n" +
-                                                        "example input :\ncalendar date test 2025-10-01 2025-10-02\n" +
-                                                        "calendar time test 2025-10-01T00:00 2025-10-02T12:00\n").queue();
+            else {
+                    event.getChannel().sendMessage("formats:\n\n\"calendar  (adddate)  (title)  (yyyy/mm/dd)  (yyyy/mm/dd)\" \n" + 
+                                        "\"calendar  (addtime)  (title)  (yyyy/mm/dd(Txx:xx))  (yyyy/mm/dd(Txx:xx))\"\n" +
+                                        "\"calendar  (delete)  (title)  (yyyy/mm/dd)\"\n" + 
+                                        "example input :\n\ncalendar date test 2025-10-01 2025-10-02\n" +
+                                        "calendar time test 2025-10-01T00:00 2025-10-02T12:00\n" + 
+                                        "calendar delete test 2025-10-01\n" +
+                                        "calendar listevent 5\n").queue();
             }
         }
 

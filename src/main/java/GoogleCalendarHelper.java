@@ -19,6 +19,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
@@ -127,4 +130,70 @@ public class GoogleCalendarHelper {
         event = service.events().insert("primary", event).execute();
         System.out.printf("Event created: %s\n", event.getHtmlLink());
     }
+
+    public boolean deleteEventByTitleAndDate(Calendar service, String title, DateTime date) throws IOException {
+        Events events = service.events().list("primary")
+            .setTimeMin(date)
+            .setTimeMax(new DateTime(date.getValue() + 24 * 60 * 60 * 1000))  // 1 day later
+            .setSingleEvents(true)
+            .execute();
+        boolean deleted = false;
+        for (Event event : events.getItems()) {
+            if (event.getSummary().equalsIgnoreCase(title)) {
+                deleted = true;
+                service.events().delete("primary", event.getId()).execute();
+                System.out.println("Deleted event: " + title);
+                return deleted;
+            }
+        }
+        System.out.println("No matching event \"" + title + "\" on " + date + " is found.");
+        return deleted;
+    }
+    public String listEvents(Calendar service, int maxResults, DateTime dateInput) throws IOException {
+        Events events = service.events().list("primary")
+            .setMaxResults(maxResults)
+            .setTimeMin(dateInput)
+            .setOrderBy("startTime")
+            .setSingleEvents(true)
+            .execute();
+
+        List<Event> items = events.getItems();
+        if (items.isEmpty()) {
+            return "📭 No upcoming events found.";
+        } else {
+            StringBuilder sb = new StringBuilder("📅 **Upcoming Events:**\n");
+            for (Event event : items) {
+                String eventName = event.getSummary();
+                DateTime start = event.getStart().getDateTime(); // for timed events
+                if (start == null) {
+                    start = event.getStart().getDate(); // for all-day events
+                }
+
+                DateTime end = event.getEnd().getDateTime();
+
+                // Format the datetime
+                if (start == null || end == null) {
+                    start = event.getStart().getDate();
+                    end = event.getEnd().getDate();
+                    LocalDate endExcludeOne = LocalDate.parse(end.toString()).minusDays(1);
+                    end = new DateTime(endExcludeOne.toString());
+                    sb.append("• ").append(eventName)
+                    .append(" — ").append(start.toStringRfc3339())
+                    .append(" to ").append(end.toStringRfc3339())
+                    .append(" (All-day)\n");
+                } else {
+                    LocalDate endExcludeOne = LocalDate.parse(end.toString()).minusDays(1);
+                    end = new DateTime(endExcludeOne.toString());
+                    sb.append("• ").append(eventName)
+                    .append(" — ").append(start.toStringRfc3339())
+                    .append(" to ").append(end.toStringRfc3339())
+                    .append("\n");
+                }
+
+            }
+            return sb.toString();
+        }
+    }
+
+
 }
