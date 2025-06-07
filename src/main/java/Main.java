@@ -13,7 +13,7 @@ import java.io.InputStreamReader;
 public class Main {
 
     private static final String TOKEN = "MTI0NzEwMjI5NDU5MjMyNzcyMA.GU8K6l.           -nr1ZfOGQ0FY7N8_s4pKYVZGRU9-QK4k242p9c".replaceAll(" ","");
-    private static final String API_KEY = "c28ce52e2f1a4d5d98444219252405";
+    private static final String API_KEY = "214fdac5000b4882bd052918250706";
 
     public static String getApiKey(){
         return API_KEY;
