@@ -1,7 +1,7 @@
 ﻿# Java_Final
 original idea:
 We want to create a bot that search for daily weather info and provide other daily life usages.
-Currently functions:
+Current functions are as follows
 ==================================================
 
 weather forecast
