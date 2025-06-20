@@ -7,7 +7,7 @@ import javax.security.auth.login.LoginException;
 
 public class Main {
 
-    private static final String TOKEN = "MTI0NzEwMjI5NDU5MjMyNzcyMA.GU8K6l.-nr1ZfOGQ0FY7N8_s4pKYVZGRU9-QK4k242p9c".replaceAll(" ","");
+    private static final String TOKEN = "MTI0NzEwMjI5NDU5MjMyNzcyMA.G490HJ.              4l0JZ3dNVqkZdi4QPIdS1ldW27Gt5d_KErY1Bs".replaceAll(" ","");
     private static final String API_KEY = "214fdac5000b4882bd052918250706";
 
     public static String getApiKey(){
