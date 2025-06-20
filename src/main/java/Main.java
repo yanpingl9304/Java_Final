@@ -3,16 +3,11 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 
 import javax.security.auth.login.LoginException;
-import java.nio.charset.StandardCharsets;
-
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 
 
 public class Main {
 
-    private static final String TOKEN = "MTI0NzEwMjI5NDU5MjMyNzcyMA.GU8K6l.           -nr1ZfOGQ0FY7N8_s4pKYVZGRU9-QK4k242p9c".replaceAll(" ","");
+    private static final String TOKEN = "MTI0NzEwMjI5NDU5MjMyNzcyMA.GU8K6l.-nr1ZfOGQ0FY7N8_s4pKYVZGRU9-QK4k242p9c".replaceAll(" ","");
     private static final String API_KEY = "214fdac5000b4882bd052918250706";
 
     public static String getApiKey(){
@@ -28,6 +23,5 @@ public class Main {
                   .build();
         jda.addEventListener(new Listeners());
         jda.addEventListener(new SlashCommand());
-        // jda.addEventListener(new Travel());
     }
 }

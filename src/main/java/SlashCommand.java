@@ -1,26 +1,13 @@
-
-import java.io.*;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONObject;
 
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.events.interaction.command.CommandAutoCompleteInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.Command;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.entities.Guild;
-
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 
 
@@ -30,7 +17,7 @@ public class SlashCommand extends ListenerAdapter {
     ConfigManager config = ConfigManager.getInstance();
     SQLManager DBManager = SQLManager.getInstance();
     Listeners listener = new Listeners();
-
+    Weather weatherManager = new Weather();
     SlashCommand(JSONObject configFile){
         this.configFile = configFile;
     }
@@ -114,7 +101,7 @@ public class SlashCommand extends ListenerAdapter {
             String place = event.getOption("place").getAsString().trim();
 
             EmbedBuilder embed = new EmbedBuilder();
-            embed = listener.GetCurrentWeather(place);
+            embed = weatherManager.GetCurrentWeather(place);
             event.replyEmbeds(embed.build()).queue();
         }
 
